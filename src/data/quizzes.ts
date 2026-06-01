@@ -1,99 +1,30 @@
+import { STUDY_LEVELS } from '@/data/levels';
 import type { QuizQuestion } from '@/types';
 
-export const ALL_QUIZZES: QuizQuestion[] = [
-  {
-    id: 'quiz_001',
-    question: '労働基準法において、使用者が労働者に年次有給休暇を与えなければならない最低継続勤務年数は？',
-    options: ['6ヶ月', '1年', '1年6ヶ月', '2年'],
-    correctIndex: 0,
-    explanation: '継続勤務6ヶ月で、全労働日の8割以上出勤した労働者に対して、10日の年次有給休暇が発生します。',
-    subject: '労働基準法',
-    difficulty: 'easy',
-  },
-  {
-    id: 'quiz_002',
-    question: '労働安全衛生法において、常時50人以上の労働者を使用する事業場に選任が義務付けられているのは？',
-    options: ['安全委員会', '衛生管理者', '産業医', '安全衛生推進者'],
-    correctIndex: 2,
-    explanation: '常時50人以上の労働者を使用する事業場では、産業医の選任が義務付けられています。',
-    subject: '労働安全衛生法',
-    difficulty: 'normal',
-  },
-  {
-    id: 'quiz_003',
-    question: '労災保険の通勤災害における「通勤」の定義に含まれないものはどれですか？',
-    options: ['就業の場所から住居への移動', '住居から就業の場所への移動', '単身赴任先住居と帰省先住居間の移動', '趣味のドライブ中の移動'],
-    correctIndex: 3,
-    explanation: '通勤とは、就業に関し、住居と就業の場所との間の往復などを、合理的な経路及び方法で行うことです。趣味のドライブは含まれません。',
-    subject: '労災保険法',
-    difficulty: 'normal',
-  },
-  {
-    id: 'quiz_004',
-    question: '雇用保険の基本手当の受給資格を得るための、離職前の被保険者期間（原則）は？',
-    options: ['離職前6ヶ月に通算3ヶ月以上', '離職前1年間に通算6ヶ月以上', '離職前2年間に通算12ヶ月以上', '離職前3年間に通算12ヶ月以上'],
-    correctIndex: 2,
-    explanation: '基本手当の受給資格は、原則として離職前2年間に被保険者期間が通算12ヶ月以上あることが必要です。',
-    subject: '雇用保険法',
-    difficulty: 'normal',
-  },
-  {
-    id: 'quiz_005',
-    question: '国民年金の第3号被保険者とは誰ですか？',
-    options: [
-      '自営業者やフリーランス',
-      '会社員や公務員',
-      '会社員・公務員等の被扶養配偶者（20歳以上60歳未満）',
-      '65歳以上の任意加入者',
-    ],
-    correctIndex: 2,
-    explanation: '第3号被保険者は、厚生年金保険または共済組合の被保険者の被扶養配偶者で、20歳以上60歳未満の者です。',
-    subject: '国民年金法',
-    difficulty: 'easy',
-  },
-  {
-    id: 'quiz_006',
-    question: '健康保険の標準報酬月額の等級は何等級ですか？',
-    options: ['30等級', '40等級', '47等級', '50等級'],
-    correctIndex: 2,
-    explanation: '健康保険の標準報酬月額は第1級（5万8千円）から第50級（139万円）まで50等級ありますが、実際の適用は47等級です（2023年現在）。',
-    subject: '健康保険法',
-    difficulty: 'hard',
-  },
-  {
-    id: 'quiz_007',
-    question: '厚生年金保険の被保険者期間の上限（資格喪失年齢）は何歳ですか？',
-    options: ['60歳', '65歳', '70歳', '75歳'],
-    correctIndex: 2,
-    explanation: '厚生年金保険の被保険者は、70歳に達した日に資格を喪失します。',
-    subject: '厚生年金保険法',
-    difficulty: 'normal',
-  },
-  {
-    id: 'quiz_008',
-    question: '労働保険料の申告・納付は原則として年に何回ですか？',
-    options: ['1回', '2回', '3回', '4回'],
-    correctIndex: 0,
-    explanation: '労働保険料の年度更新（確定保険料の申告・精算と概算保険料の申告・納付）は、原則として年1回（6月1日から7月10日）です。',
-    subject: '労働保険徴収法',
-    difficulty: 'normal',
-  },
-  {
-    id: 'quiz_009',
-    question: '解雇予告は、原則として少なくとも何日前に行わなければなりませんか？',
-    options: ['7日前', '14日前', '30日前', '60日前'],
-    correctIndex: 2,
-    explanation: '使用者は、労働者を解雇しようとする場合、少なくとも30日前に予告しなければなりません（解雇予告）。',
-    subject: '労働基準法',
-    difficulty: 'easy',
-  },
-  {
-    id: 'quiz_010',
-    question: '介護休業を取得できる日数の上限（同一の対象家族について）は何日ですか？',
-    options: ['60日', '93日', '120日', '180日'],
-    correctIndex: 1,
-    explanation: '介護休業は、同一の対象家族について通算93日まで取得できます（3回まで分割可能）。',
-    subject: '一般常識',
-    difficulty: 'hard',
-  },
-];
+/** 全レベルのクイズをフラットに展開したもの（クイズチャレンジ画面で使用） */
+export type QuizWithLevel = QuizQuestion & { levelId: number };
+
+export const ALL_QUIZZES: QuizWithLevel[] = STUDY_LEVELS.flatMap((level) =>
+  level.quiz.map((q) => ({ ...q, levelId: level.levelNumber }))
+);
+
+/** 科目別に絞り込むユーティリティ */
+export function getQuizzesBySubject(subject: string): QuizWithLevel[] {
+  return ALL_QUIZZES.filter((q) => q.subject === subject);
+}
+
+/** 難易度別に絞り込むユーティリティ */
+export function getQuizzesByDifficulty(difficulty: QuizQuestion['difficulty']): QuizWithLevel[] {
+  return ALL_QUIZZES.filter((q) => q.difficulty === difficulty);
+}
+
+/** ランダムに n 問取得するユーティリティ */
+export function getRandomQuizzes(n: number): QuizWithLevel[] {
+  const shuffled = [...ALL_QUIZZES].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(n, shuffled.length));
+}
+
+/** レベル範囲でクイズを取得するユーティリティ */
+export function getQuizzesByLevelRange(from: number, to: number): QuizWithLevel[] {
+  return ALL_QUIZZES.filter((q) => q.levelId >= from && q.levelId <= to);
+}
