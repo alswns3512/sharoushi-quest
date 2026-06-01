@@ -8,11 +8,13 @@ import type { Quest } from '@/types';
 const TYPE_LABELS: Record<Quest['type'], string> = {
   daily: '日課',
   weekly: '週間',
+  story: 'ストーリー',
   achievement: '実績',
 };
 const TYPE_COLORS: Record<Quest['type'], string> = {
   daily: '#F59E0B',
   weekly: '#818CF8',
+  story: '#10B981',
   achievement: '#FB7185',
 };
 
@@ -22,6 +24,7 @@ export default function QuestPage() {
   const grouped = {
     daily: quests.filter((q) => q.type === 'daily'),
     weekly: quests.filter((q) => q.type === 'weekly'),
+    story: quests.filter((q) => q.type === 'story'),
     achievement: quests.filter((q) => q.type === 'achievement'),
   };
 
@@ -32,7 +35,7 @@ export default function QuestPage() {
         <h1 className="heading-serif text-2xl" style={{ color: '#818CF8' }}>クエスト</h1>
       </div>
 
-      {(['daily', 'weekly', 'achievement'] as const).map((type, gi) => (
+      {(['daily', 'weekly', 'story', 'achievement'] as const).map((type, gi) => (
         <motion.div key={type} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.1 }} className="mb-6">
           <h2 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: TYPE_COLORS[type] }}>
             <div className="w-1.5 h-4 rounded-full" style={{ background: TYPE_COLORS[type] }} />

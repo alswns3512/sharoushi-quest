@@ -51,11 +51,16 @@ export default function CollectionPage() {
               <div className="text-xs font-bold text-ink-muted">???</div>
               <div className="text-xs text-ink-subtle leading-tight">
                 {badge.condition.type === 'streak' && `${badge.condition.value}日連続学習`}
-                {badge.condition.type === 'level' && `Lv.${badge.condition.value}に到達`}
+                {badge.condition.type === 'level_number' && `Level${badge.condition.value}クリア`}
                 {badge.condition.type === 'quiz_correct' && `クイズ${badge.condition.value}問正解`}
                 {badge.condition.type === 'study_minutes' && `${badge.condition.value}分学習`}
                 {badge.condition.type === 'flashcard_master' && `カード${badge.condition.value}枚マスター`}
                 {badge.condition.type === 'quest_complete' && `クエスト${badge.condition.value}個完了`}
+                {badge.condition.type === 'first_login' && 'アプリを起動する'}
+                {badge.condition.type === 'daily_levels' && `1日${badge.condition.value}レベルクリア`}
+                {badge.condition.type === 'night_study' && '夜22時以降に学習'}
+                {badge.condition.type === 'morning_study' && '朝6時前に学習'}
+                {badge.condition.type === 'quiz_streak' && `クイズ${badge.condition.value}問連続正解`}
               </div>
             </motion.div>
           ))}

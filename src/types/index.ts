@@ -1,3 +1,14 @@
+export type LevelSubject =
+  | 'intro'
+  | 'sharoushi'
+  | 'rodo'
+  | 'anzen'
+  | 'rousai'
+  | 'koyo'
+  | 'kenko'
+  | 'nenkin';
+
+// Legacy alias kept for quizzes / flashcards
 export type Subject =
   | '労働基準法'
   | '労働安全衛生法'
@@ -8,11 +19,13 @@ export type Subject =
   | '厚生年金保険法'
   | '国民年金法'
   | '労働保険徴収法'
-  | '一般常識';
+  | '一般常識'
+  | '超入門'
+  | '社労士入門';
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
 
-export type QuestType = 'daily' | 'weekly' | 'achievement';
+export type QuestType = 'daily' | 'weekly' | 'story' | 'achievement';
 
 export interface UserProgress {
   userId: string;
@@ -28,16 +41,31 @@ export interface UserProgress {
   quizCorrectCount: number;
   quizTotalCount: number;
   flashcardMasteredCount: number;
+  quizStreak: number;
+  lastLoginDate: string | null;
+  weeklyLevelsCleared: number;
+  weeklySubjectsTouched: string[];
+  dailyLevelsClearedToday: number;
+  questsCompleted: number;
+}
+
+export interface StudyContent {
+  introduction: string;
+  explanation: string;
+  example: string;
+  keyPoints: string[];
+  memoryTip: string;
 }
 
 export interface StudyLevel {
   id: string;
+  levelNumber: number;
   title: string;
-  description: string;
-  subject: Subject;
-  difficulty: Difficulty;
+  subject: LevelSubject;
+  difficulty: number; // 1-5
+  estimatedMinutes: number;
   xpReward: number;
-  content: string;
+  content: StudyContent;
   quiz: QuizQuestion[];
 }
 
@@ -49,6 +77,7 @@ export interface Quest {
   target: number;
   current: number;
   xpReward: number;
+  badgeReward?: string;
   isCompleted: boolean;
   expiresAt: string | null;
 }
@@ -64,7 +93,18 @@ export interface Badge {
 }
 
 export interface BadgeCondition {
-  type: 'streak' | 'level' | 'quiz_correct' | 'study_minutes' | 'flashcard_master' | 'quest_complete';
+  type:
+    | 'streak'
+    | 'level_number'
+    | 'quiz_correct'
+    | 'study_minutes'
+    | 'flashcard_master'
+    | 'quest_complete'
+    | 'first_login'
+    | 'daily_levels'
+    | 'night_study'
+    | 'morning_study'
+    | 'quiz_streak';
   value: number;
 }
 

@@ -19,6 +19,12 @@ const DEFAULT_PROGRESS: UserProgress = {
   quizCorrectCount: 0,
   quizTotalCount: 0,
   flashcardMasteredCount: 0,
+  quizStreak: 0,
+  lastLoginDate: null,
+  weeklyLevelsCleared: 0,
+  weeklySubjectsTouched: [],
+  dailyLevelsClearedToday: 0,
+  questsCompleted: 0,
 };
 
 interface UserStore {
