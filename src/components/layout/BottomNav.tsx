@@ -2,17 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, HelpCircle, Sword, CreditCard, BarChart2, Trophy } from 'lucide-react';
+import { Home, BookOpen, Zap, CreditCard, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const NAV_ITEMS = [
-  { href: '/', label: 'ホーム', icon: Home },
-  { href: '/study', label: '学習', icon: BookOpen },
-  { href: '/quiz', label: 'クイズ', icon: HelpCircle },
-  { href: '/flashcard', label: 'カード', icon: CreditCard },
-  { href: '/quest', label: 'クエスト', icon: Sword },
-  { href: '/progress', label: '進捗', icon: BarChart2 },
-  { href: '/collection', label: '実績', icon: Trophy },
+const TABS = [
+  { href: '/',          label: 'ホーム',   icon: Home      },
+  { href: '/study',     label: '学習',     icon: BookOpen  },
+  { href: '/quest',     label: 'クエスト', icon: Zap       },
+  { href: '/flashcard', label: 'カード',   icon: CreditCard },
+  { href: '/progress',  label: '進捗',     icon: BarChart2 },
 ];
 
 export default function BottomNav() {
@@ -20,34 +18,49 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 safe-bottom"
+      className="fixed bottom-0 left-0 right-0 z-50"
       style={{
-        background: 'rgba(15, 23, 42, 0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(15,23,42,0.97)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        borderTop: '1px solid rgba(255,255,255,0.07)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      <div className="flex items-center justify-around px-1 pt-2 pb-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+      <div className="flex items-center justify-around px-2 pt-2 pb-1 max-w-lg mx-auto">
+        {TABS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
-            <Link key={href} href={href} className="flex flex-col items-center gap-0.5 min-w-[44px] py-1 relative">
+            <Link
+              key={href}
+              href={href}
+              className="flex flex-col items-center gap-0.5 relative"
+              style={{ minWidth: 52, padding: '6px 4px' }}
+            >
+              {/* Active indicator line */}
               {active && (
                 <motion.div
-                  layoutId="nav-indicator"
-                  className="absolute -top-2 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-gold-gradient-h"
-                  style={{ background: 'linear-gradient(90deg, #F59E0B, #D97706)' }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  layoutId="nav-bar"
+                  className="absolute -top-2 rounded-full"
+                  style={{ width: 28, height: 3, background: 'linear-gradient(90deg,#F59E0B,#D97706)' }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
-              <Icon
-                size={20}
-                className="transition-colors"
-                style={{ color: active ? '#F59E0B' : '#475569' }}
-              />
+
+              {/* Icon with glow when active */}
+              <motion.div
+                animate={active ? { scale: 1.15 } : { scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                style={{
+                  color: active ? '#F59E0B' : '#475569',
+                  filter: active ? 'drop-shadow(0 0 6px rgba(245,158,11,0.7))' : 'none',
+                }}
+              >
+                <Icon size={21} />
+              </motion.div>
+
               <span
-                className="text-[9px] font-medium transition-colors"
+                className="text-[9px] font-medium leading-none"
                 style={{ color: active ? '#F59E0B' : '#475569' }}
               >
                 {label}
