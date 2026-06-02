@@ -29,6 +29,12 @@ const DEFAULT_PROGRESS: UserProgress = {
 
 interface UserStore {
   progress: UserProgress;
+  // game events
+  pendingLevelUp: number | null; // new level number, null = no pending
+  pendingBadge: string | null;   // badge id
+  attendanceBonusPending: boolean;
+  attendanceBonusXP: number;
+  // actions
   gainXP: (amount: number) => void;
   completeLevel: (levelId: string) => void;
   unlockBadge: (badgeId: string) => void;
@@ -37,17 +43,39 @@ interface UserStore {
   incrementFlashcardMastered: () => void;
   touchStreak: () => void;
   resetProgress: () => void;
+  // modal controls
+  clearPendingLevelUp: () => void;
+  clearPendingBadge: () => void;
+  claimAttendanceBonus: () => void;
+  dismissAttendanceBonus: () => void;
+}
+
+function calcAttendanceBonusXP(streak: number): number {
+  if (streak >= 30) return 500;
+  if (streak >= 14) return 200;
+  if (streak >= 7)  return 100;
+  if (streak >= 3)  return 30;
+  return 10;
 }
 
 export const useUserStore = create<UserStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       progress: DEFAULT_PROGRESS,
+      pendingLevelUp: null,
+      pendingBadge: null,
+      attendanceBonusPending: false,
+      attendanceBonusXP: 10,
 
       gainXP: (amount) =>
         set((state) => {
+          const prevLevel = state.progress.level;
           const updated = applyXP(state.progress, amount);
-          return { progress: updated };
+          const leveledUp = updated.level > prevLevel;
+          return {
+            progress: updated,
+            pendingLevelUp: leveledUp ? updated.level : state.pendingLevelUp,
+          };
         }),
 
       completeLevel: (levelId) =>
@@ -69,6 +97,7 @@ export const useUserStore = create<UserStore>()(
               ...state.progress,
               unlockedBadges: [...state.progress.unlockedBadges, badgeId],
             },
+            pendingBadge: badgeId,
           };
         }),
 
@@ -98,11 +127,40 @@ export const useUserStore = create<UserStore>()(
         })),
 
       touchStreak: () =>
-        set((state) => ({
-          progress: checkAndUpdateStreak(state.progress),
-        })),
+        set((state) => {
+          const today = new Date().toDateString();
+          const lastLogin = state.progress.lastLoginDate;
+          const isFirstVisitToday = lastLogin !== today;
 
-      resetProgress: () => set({ progress: DEFAULT_PROGRESS }),
+          const updated = checkAndUpdateStreak(state.progress);
+          const bonusXP = calcAttendanceBonusXP(updated.streak);
+
+          return {
+            progress: { ...updated, lastLoginDate: today },
+            attendanceBonusPending: isFirstVisitToday,
+            attendanceBonusXP: bonusXP,
+          };
+        }),
+
+      claimAttendanceBonus: () => {
+        const { attendanceBonusXP, gainXP } = get();
+        gainXP(attendanceBonusXP);
+        set({ attendanceBonusPending: false });
+      },
+
+      dismissAttendanceBonus: () => set({ attendanceBonusPending: false }),
+
+      resetProgress: () =>
+        set({
+          progress: DEFAULT_PROGRESS,
+          pendingLevelUp: null,
+          pendingBadge: null,
+          attendanceBonusPending: false,
+          attendanceBonusXP: 10,
+        }),
+
+      clearPendingLevelUp: () => set({ pendingLevelUp: null }),
+      clearPendingBadge: () => set({ pendingBadge: null }),
     }),
     {
       name: 'sharoushi_quest_user',
@@ -114,6 +172,8 @@ export const useUserStore = create<UserStore>()(
           removeItem: () => {},
         };
       }),
+      // do not persist transient UI state
+      partialize: (state) => ({ progress: state.progress }),
     }
   )
 );

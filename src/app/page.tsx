@@ -3,12 +3,13 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, Flame, Star, ChevronRight, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Settings, Flame, Star, ChevronRight, BookOpen, CheckCircle2, Lightbulb } from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
 import { useQuestStore } from '@/store/questStore';
 import { useStudyStore } from '@/store/studyStore';
 import { useStreak } from '@/hooks/useStreak';
 import { ALL_BADGES } from '@/data/badges';
+import { TriviaModal, useTriviaAutoShow } from '@/components/game/TriviaModal';
 
 // ── レベルに応じたキャラアイコン ────────────────────────
 function charIcon(level: number) {
@@ -41,7 +42,6 @@ function Heatmap() {
     return result;
   }, [sessions]);
 
-  // 7列に分割（日〜土の縦並び、8週）
   const weeks: typeof cells[] = [];
   for (let w = 0; w < 8; w++) weeks.push(cells.slice(w * 7, w * 7 + 7));
 
@@ -84,7 +84,6 @@ function Heatmap() {
         )}
       </AnimatePresence>
 
-      {/* Legend */}
       <div className="flex items-center gap-1.5 mt-2">
         <span className="text-xs text-ink-subtle">少</span>
         {[0.07, 0.3, 0.6, 0.9].map((op) => (
@@ -101,6 +100,7 @@ export default function HomePage() {
   const { progress } = useUserStore();
   const { quests } = useQuestStore();
   const { streak, streakMessage } = useStreak();
+  const { showTrivia, setShowTrivia } = useTriviaAutoShow();
 
   const xpPct = progress.xpToNextLevel > 0
     ? Math.min(100, Math.floor((progress.currentXP / progress.xpToNextLevel) * 100))
@@ -139,7 +139,6 @@ export default function HomePage() {
         style={{ border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 0 30px rgba(245,158,11,0.1)' }}
       >
         <div className="flex items-center gap-4 mb-4">
-          {/* Character */}
           <motion.div
             animate={{ y: [0, -4, 0] }}
             transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
@@ -167,7 +166,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* XP Bar */}
         <div>
           <div className="flex justify-between text-xs text-ink-muted mb-1">
             <span>次のレベルまで</span>
@@ -183,6 +181,34 @@ export default function HomePage() {
           </div>
         </div>
       </motion.div>
+
+      {/* ── Trivia button ── */}
+      <div className="px-4 mb-4">
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          whileTap={{ scale: 0.96 }}
+          onClick={() => setShowTrivia(true)}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{
+            background: 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.25)',
+          }}
+        >
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(245,158,11,0.15)' }}
+          >
+            <Lightbulb size={16} style={{ color: '#F59E0B' }} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-xs font-bold" style={{ color: '#FCD34D' }}>今日の社労士豆知識</p>
+            <p className="text-[10px] text-ink-muted">タップして確認する</p>
+          </div>
+          <ChevronRight size={14} style={{ color: '#F59E0B' }} />
+        </motion.button>
+      </div>
 
       {/* ── Today's Quests ── */}
       <div className="px-4 mb-5">
@@ -264,7 +290,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Heatmap ── */}
-      <div className="px-4 mb-6">
+      <div className="px-4 mb-5">
         <h2 className="font-bold text-sm mb-3" style={{ color: '#F8FAFC' }}>学習ヒートマップ</h2>
         <div className="glass-card p-4">
           <Heatmap />
@@ -292,7 +318,7 @@ export default function HomePage() {
         </div>
       </motion.div>
 
-      {/* ── CTA Button (fixed bottom) ── */}
+      {/* ── CTA Button ── */}
       <div className="fixed bottom-16 left-0 right-0 px-4 z-40 max-w-lg mx-auto" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 64px)' }}>
         <motion.div
           animate={{ boxShadow: ['0 0 20px rgba(245,158,11,0.4)', '0 0 40px rgba(245,158,11,0.7)', '0 0 20px rgba(245,158,11,0.4)'] }}
@@ -302,7 +328,6 @@ export default function HomePage() {
           <Link href="/study">
             <motion.button
               whileTap={{ scale: 0.93 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
               className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-base"
               style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', color: '#0F172A' }}
             >
@@ -313,6 +338,9 @@ export default function HomePage() {
           </Link>
         </motion.div>
       </div>
+
+      {/* ── Trivia Modal ── */}
+      <TriviaModal open={showTrivia} onClose={() => setShowTrivia(false)} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BottomNav from '@/components/layout/BottomNav';
+import { GameOverlays } from '@/components/game/GameOverlays';
 
 export const metadata: Metadata = {
   title: '社労士クエスト',
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <main className="relative z-10 min-h-dvh pb-24">{children}</main>
         <BottomNav />
+        <GameOverlays />
       </body>
     </html>
   );
