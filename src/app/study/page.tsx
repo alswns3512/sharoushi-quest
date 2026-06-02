@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Lock, Star, Clock, X, Zap, BookOpen, RotateCcw } from 'lucide-react';
 import { STUDY_LEVELS } from '@/data/levels';
 import { useUserStore } from '@/store/userStore';
+import { useQuestStore } from '@/store/questStore';
 import { useXP } from '@/hooks/useXP';
 import { useSound } from '@/hooks/useSound';
 import type { StudyLevel, QuizQuestion } from '@/types';
@@ -161,7 +162,8 @@ function LearningFlow({
   const [understanding, setUnderstanding] = useState<UnderstandingLevel | null>(null);
   const [earnedXP, setEarnedXP] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const { completeLevel } = useUserStore();
+  const { completeLevel, progress } = useUserStore();
+  const { updateQuestProgress } = useQuestStore();
   const { addXP } = useXP();
   const { play } = useSound();
 
@@ -177,7 +179,17 @@ function LearningFlow({
     const xp = Math.floor(level.xpReward * (0.5 + ratio * 0.5));
     setEarnedXP(xp);
     addXP(xp);
-    if (ratio >= 0.5) completeLevel(level.id);
+    if (ratio >= 0.5) {
+      completeLevel(level.id);
+      // クエスト進捗を更新
+      updateQuestProgress('daily_level', 1);
+      updateQuestProgress('weekly_levels', 1);
+      // ストーリークエスト
+      const newCount = progress.completedLevels.length + 1;
+      if (level.id === 'level_001') updateQuestProgress('story_first_step', 1);
+      if (newCount >= 10) updateQuestProgress('story_intro_complete', 10);
+      if (newCount >= 20) updateQuestProgress('story_sharoushi_complete', 20);
+    }
     play('complete');
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 2000);

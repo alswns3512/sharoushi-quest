@@ -6,6 +6,7 @@ import { Clock, RefreshCw, ChevronRight, Star, Pencil, CheckCircle, X, AlertCirc
 import Link from 'next/link';
 import { ALL_QUIZZES, getRandomQuizzes, getQuizzesBySubject, type QuizWithLevel } from '@/data/quizzes';
 import { useUserStore } from '@/store/userStore';
+import { useQuestStore } from '@/store/questStore';
 import { useXP } from '@/hooks/useXP';
 import { useSound } from '@/hooks/useSound';
 import { storageGet, storageSet } from '@/lib/storage';
@@ -81,6 +82,7 @@ function ModeCard({ icon, title, desc, color, onClick }: { icon: React.ReactNode
 // ── Main ─────────────────────────────────────────────────────────────────
 export default function QuizPage() {
   const { progress, recordQuizAnswer } = useUserStore();
+  const { updateQuestProgress } = useQuestStore();
   const { addXP } = useXP();
   const { play } = useSound();
 
@@ -124,8 +126,12 @@ export default function QuizPage() {
     setChosen(i); play(ok ? 'correct' : 'wrong');
     recordQuizAnswer(ok);
     setAnswers((a) => [...a, { qid: q.id, correct: ok }]);
-    if (ok) addXP(XP_CORRECT);
-    else { const w = loadWrong(); w[q.id] = (w[q.id] ?? 0) + 1; saveWrong(w); }
+    if (ok) {
+      addXP(XP_CORRECT);
+      updateQuestProgress('daily_quiz', 1);
+    } else {
+      const w = loadWrong(); w[q.id] = (w[q.id] ?? 0) + 1; saveWrong(w);
+    }
   };
 
   const saveMemo = () => {

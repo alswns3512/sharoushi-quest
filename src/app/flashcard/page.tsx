@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-mo
 import { ChevronRight, RotateCcw, CheckCircle, X, Clock, Lamp, CreditCard } from 'lucide-react';
 import { FLASHCARDS, type FlashcardWithTip } from '@/data/flashcards';
 import { useUserStore } from '@/store/userStore';
+import { useQuestStore } from '@/store/questStore';
 import { useSound } from '@/hooks/useSound';
 import { storageGet, storageSet } from '@/lib/storage';
 
@@ -146,6 +147,7 @@ function SwipeCard({
 // ── Main ─────────────────────────────────────────────────────────────────
 export default function FlashcardPage() {
   const { incrementFlashcardMastered } = useUserStore();
+  const { updateQuestProgress } = useQuestStore();
   const { play } = useSound();
 
   const [phase, setPhase]       = useState<Phase>('select');
@@ -169,13 +171,17 @@ export default function FlashcardPage() {
     states[card.id] = result;
     saveCardStates(states);
 
-    if (result === 'know') { play('correct'); incrementFlashcardMastered(); }
-    else { play('wrong'); }
+    if (result === 'know') {
+      play('correct');
+      incrementFlashcardMastered();
+      updateQuestProgress('daily_flashcard', 1);
+    } else { play('wrong'); }
 
     setResults((r) => [...r, { id: card.id, result }]);
 
     if (deckIdx + 1 >= deck.length) setPhase('done');
     else setDeckIdx((n) => n + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deck, deckIdx, play, incrementFlashcardMastered]);
 
   const knewCount   = results.filter((r) => r.result === 'know').length;
