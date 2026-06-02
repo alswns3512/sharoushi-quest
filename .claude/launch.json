@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "sharoushi-quest",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "export NVM_DIR=\"$HOME/.nvm\" && . \"$NVM_DIR/nvm.sh\" && cd ~/Desktop/sharoushi-quest && npm run dev"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "port": 3000
     }
   ]
