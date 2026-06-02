@@ -162,15 +162,21 @@ function LearningFlow({
   const [understanding, setUnderstanding] = useState<UnderstandingLevel | null>(null);
   const [earnedXP, setEarnedXP] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const { completeLevel, progress } = useUserStore();
+  const { completeLevel } = useUserStore();
   const { updateQuestProgress } = useQuestStore();
   const { addXP } = useXP();
   const { play } = useSound();
 
   const step = steps[stepIdx];
 
+  // ボタン押下時（tap音あり）
   const advance = () => {
     play('tap');
+    if (stepIdx + 1 < steps.length) setStepIdx((n) => n + 1);
+  };
+
+  // プログラム的な進行（tap音なし — complete音と重複しないように）
+  const advanceQuiet = () => {
     if (stepIdx + 1 < steps.length) setStepIdx((n) => n + 1);
   };
 
@@ -182,19 +188,18 @@ function LearningFlow({
     addXP(xp);
     if (ratio >= 0.5) {
       completeLevel(level.id);
-      // クエスト進捗を更新
+      // クエスト進捗（1ずつ増分）
       updateQuestProgress('daily_level', 1);
       updateQuestProgress('weekly_levels', 1);
-      // ストーリークエスト
-      const newCount = progress.completedLevels.length + 1;
+      // ストーリークエスト（1ずつ積み上げ、target到達で自動完了）
       if (level.id === 'level_001') updateQuestProgress('story_first_step', 1);
-      if (newCount >= 10) updateQuestProgress('story_intro_complete', 10);
-      if (newCount >= 20) updateQuestProgress('story_sharoushi_complete', 20);
+      updateQuestProgress('story_intro_complete', 1);
+      updateQuestProgress('story_sharoushi_complete', 1);
     }
-    play('complete');
+    play('complete'); // tap音なしで進行
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 2000);
-    advance();
+    advanceQuiet();
   };
 
   const meta = SUBJECT_META[level.subject] ?? { label: level.subject, color: '#94A3B8' };

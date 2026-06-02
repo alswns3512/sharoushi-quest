@@ -7,10 +7,11 @@ import { INITIAL_QUESTS } from '@/data/quests';
 
 interface QuestStore {
   quests: Quest[];
-  claimedQuestIds: string[]; // 受け取り済みクエストID（永続）
+  claimedQuestIds: string[];
+  lastQuestResetDate: string | null;
   updateQuestProgress: (questId: string, amount: number) => Quest | null;
   claimQuest: (questId: string) => void;
-  resetDailyQuests: () => void;
+  resetDailyQuests: (today: string) => void;
   initQuests: () => void;
 }
 
@@ -19,6 +20,7 @@ export const useQuestStore = create<QuestStore>()(
     (set, get) => ({
       quests: INITIAL_QUESTS,
       claimedQuestIds: [],
+      lastQuestResetDate: null,
 
       updateQuestProgress: (questId, amount) => {
         let completedQuest: Quest | null = null;
@@ -42,20 +44,25 @@ export const useQuestStore = create<QuestStore>()(
           return { claimedQuestIds: [...state.claimedQuestIds, questId] };
         }),
 
-      resetDailyQuests: () =>
-        set((state) => ({
-          quests: state.quests.map((q) => {
+      // 日付が変わった時に呼ばれる — デイリークエストのみリセット
+      resetDailyQuests: (today: string) =>
+        set((state) => {
+          const endOfDay = new Date();
+          endOfDay.setHours(23, 59, 59, 999);
+
+          const quests = state.quests.map((q) => {
             if (q.type !== 'daily') return q;
-            const tomorrow = new Date();
-            tomorrow.setHours(23, 59, 59, 999);
-            return { ...q, current: 0, isCompleted: false, expiresAt: tomorrow.toISOString() };
-          }),
+            return { ...q, current: 0, isCompleted: false, expiresAt: endOfDay.toISOString() };
+          });
+
           // デイリークエストのクレーム状態もリセット
-          claimedQuestIds: state.claimedQuestIds.filter((id) => {
+          const claimedQuestIds = state.claimedQuestIds.filter((id) => {
             const q = state.quests.find((qq) => qq.id === id);
             return q?.type !== 'daily';
-          }),
-        })),
+          });
+
+          return { quests, claimedQuestIds, lastQuestResetDate: today };
+        }),
 
       initQuests: () => {
         const { quests } = get();
