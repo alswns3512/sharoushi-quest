@@ -6,6 +6,7 @@ import { CheckCircle, Lock, Star, Clock, X, Zap, BookOpen, RotateCcw } from 'luc
 import { STUDY_LEVELS } from '@/data/levels';
 import { useUserStore } from '@/store/userStore';
 import { useQuestStore } from '@/store/questStore';
+import { useStudyStore } from '@/store/studyStore';
 import { useXP } from '@/hooks/useXP';
 import { useSound } from '@/hooks/useSound';
 import { checkAndUnlockBadges } from '@/lib/gameLogic';
@@ -164,9 +165,16 @@ function LearningFlow({
   const [earnedXP, setEarnedXP] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const { completeLevel, unlockBadge, addStudyMinutes } = useUserStore();
-  const { updateQuestProgress } = useQuestStore();
+  const { updateQuestProgress, touchSubjectThisWeek } = useQuestStore();
+  const { startSession, endSession } = useStudyStore();
   const { addXP } = useXP();
   const { play } = useSound();
+
+  // セッション開始（マウント時）
+  useEffect(() => {
+    startSession();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const step = steps[stepIdx];
 
@@ -189,16 +197,20 @@ function LearningFlow({
     addXP(xp);
     if (ratio >= 0.5) {
       completeLevel(level.id);
-      // 学習時間を記録
+      // 学習時間を記録 + セッション保存（ヒートマップ用）
       addStudyMinutes(level.estimatedMinutes);
+      endSession(xp, [level.id]);
       // クエスト進捗（1ずつ増分）
       updateQuestProgress('daily_level', 1);
       updateQuestProgress('weekly_levels', 1);
+      // 週間科目タッチ（初回のみ +1）
+      const isNewSubject = touchSubjectThisWeek(level.subject);
+      if (isNewSubject) updateQuestProgress('weekly_subjects', 1);
       // ストーリークエスト（1ずつ積み上げ、target到達で自動完了）
       if (level.id === 'level_001') updateQuestProgress('story_first_step', 1);
       updateQuestProgress('story_intro_complete', 1);
       updateQuestProgress('story_sharoushi_complete', 1);
-      // バッジチェック（completeLevel後にstoreが更新されるので最新状態を取得）
+      // バッジチェック
       const latestProgress = useUserStore.getState().progress;
       checkAndUnlockBadges(latestProgress, unlockBadge);
     }
