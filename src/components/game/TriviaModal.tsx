@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, X, BookOpen, PartyPopper } from 'lucide-react';
 import { getTodayTrivia, type TriviaItem } from '@/data/trivia';
+import { useSound } from '@/hooks/useSound';
 
 const STORAGE_KEY = 'sharoushi_trivia_seen';
 
@@ -20,6 +21,7 @@ interface TriviaModalProps {
 export function TriviaModal({ open, onClose }: TriviaModalProps) {
   const [trivia, setTrivia] = useState<TriviaItem | null>(null);
   const [reaction, setReaction] = useState<'knew' | 'new' | null>(null);
+  const { play } = useSound();
 
   useEffect(() => {
     setTrivia(getTodayTrivia());
@@ -27,6 +29,7 @@ export function TriviaModal({ open, onClose }: TriviaModalProps) {
 
   function handleReaction(r: 'knew' | 'new') {
     setReaction(r);
+    play(r === 'knew' ? 'ding' : 'chime'); // 知ってた=ding / 初めて知った=chime
     if (typeof window !== 'undefined') {
       const seen = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       seen[getTodayKey()] = r;

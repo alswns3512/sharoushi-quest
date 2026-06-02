@@ -170,6 +170,7 @@ function LearningFlow({
   const step = steps[stepIdx];
 
   const advance = () => {
+    play('tap');
     if (stepIdx + 1 < steps.length) setStepIdx((n) => n + 1);
   };
 
@@ -392,6 +393,7 @@ export default function StudyPage() {
   const [activeLevel, setActiveLevel] = useState<StudyLevel | null>(null);
   const [mode, setMode] = useState<StudyMode>('normal');
   const [lastXP, setLastXP] = useState<number | null>(null);
+  const { play: playSound } = useSound();
 
   const isCompleted = useCallback((id: string) => progress.completedLevels.includes(id), [progress.completedLevels]);
 
@@ -417,7 +419,7 @@ export default function StudyPage() {
           {(Object.entries(MODE_META) as [StudyMode, typeof MODE_META.normal][]).map(([m, meta]) => (
             <button
               key={m}
-              onClick={() => setMode(m)}
+              onClick={() => { setMode(m); playSound('tap'); }}
               className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-200"
               style={{
                 background: mode === m ? meta.color + '25' : 'transparent',
@@ -486,7 +488,7 @@ export default function StudyPage() {
                     transition={{ delay: Math.min(i * 0.04, 0.4) }}
                     whileTap={locked ? {} : { scale: 0.97 }}
                     disabled={locked}
-                    onClick={() => !locked && setActiveLevel(level)}
+                    onClick={() => { if (!locked) { playSound('tap'); setActiveLevel(level); } }}
                     className="w-full glass-card p-3 flex items-center gap-3 text-left disabled:opacity-35"
                     style={
                       done

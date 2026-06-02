@@ -327,7 +327,7 @@ export default function HomePage() {
           transition={{ repeat: Infinity, duration: 2 }}
           className="rounded-2xl"
         >
-          <Link href="/study">
+          <Link href="/study" onClick={() => play('navigate')}>
             <motion.button
               whileTap={{ scale: 0.93 }}
               className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-base"
