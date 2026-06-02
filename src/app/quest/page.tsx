@@ -7,7 +7,6 @@ import { useQuestStore } from '@/store/questStore';
 import { useUserStore } from '@/store/userStore';
 import type { Quest } from '@/types';
 
-const TYPE_LABELS = { daily: '日課', weekly: '週間', story: 'ストーリー' } as const;
 type TabType = 'daily' | 'weekly' | 'story';
 
 const TAB_CONFIG: { type: TabType; label: string; color: string; icon: string }[] = [
@@ -41,7 +40,7 @@ function XPFloat({ xp, onDone }: { xp: number; onDone: () => void }) {
 export default function QuestPage() {
   const [tab, setTab] = useState<TabType>('daily');
   const [floatXP, setFloatXP] = useState<{ id: number; xp: number } | null>(null);
-  const { quests, updateQuestProgress } = useQuestStore();
+  const { quests } = useQuestStore();
   const { gainXP } = useUserStore();
 
   const tabQuests = quests.filter((q) =>
