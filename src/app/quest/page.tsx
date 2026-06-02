@@ -41,7 +41,7 @@ function XPFloat({ xp, onDone }: { xp: number; onDone: () => void }) {
 export default function QuestPage() {
   const [tab, setTab] = useState<TabType>('daily');
   const [floatXP, setFloatXP] = useState<{ id: number; xp: number } | null>(null);
-  const { quests } = useQuestStore();
+  const { quests, claimedQuestIds, claimQuest: markClaimed } = useQuestStore();
   const { gainXP } = useUserStore();
   const { play } = useSound();
 
@@ -52,8 +52,9 @@ export default function QuestPage() {
   const completedCount = tabQuests.filter((q) => q.isCompleted).length;
 
   function claimQuest(quest: Quest) {
-    if (!quest.isCompleted) return;
+    if (!quest.isCompleted || claimedQuestIds.includes(quest.id)) return;
     gainXP(quest.xpReward);
+    markClaimed(quest.id);
     play('ding');
     setFloatXP({ id: Date.now(), xp: quest.xpReward });
   }
@@ -102,7 +103,7 @@ export default function QuestPage() {
             <div className="text-center py-16 text-ink-muted text-sm">クエストがありません</div>
           )}
           {tabQuests.map((quest, i) => (
-            <QuestCard key={quest.id} quest={quest} index={i} onClaim={() => claimQuest(quest)} />
+            <QuestCard key={quest.id} quest={quest} index={i} claimed={claimedQuestIds.includes(quest.id)} onClaim={() => claimQuest(quest)} />
           ))}
         </motion.div>
       </AnimatePresence>
@@ -117,8 +118,7 @@ export default function QuestPage() {
   );
 }
 
-function QuestCard({ quest, index, onClaim }: { quest: Quest; index: number; onClaim: () => void }) {
-  const [claimed, setClaimed] = useState(false);
+function QuestCard({ quest, index, claimed, onClaim }: { quest: Quest; index: number; claimed: boolean; onClaim: () => void }) {
   const progress = quest.target > 0 ? Math.min(100, Math.floor((quest.current / quest.target) * 100)) : 0;
 
   const TYPE_COLORS: Record<Quest['type'], string> = {
@@ -132,7 +132,6 @@ function QuestCard({ quest, index, onClaim }: { quest: Quest; index: number; onC
 
   function handleClaim() {
     if (!canClaim) return;
-    setClaimed(true);
     onClaim();
   }
 

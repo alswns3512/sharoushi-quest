@@ -22,9 +22,33 @@ const SUBJECTS = [
   { key: 'nenkin',    label: '年金法',           icon: '🏦', color: '#F472B6', difficulty: 5, totalLevels: 10 },
 ] as const;
 
-const TOTAL_LEVELS = 100; // 全レベル数（想定）
-const IMPLEMENTED_LEVELS = 30; // 実装済みレベル数
-const AVG_MINS_PER_LEVEL = 5; // 1レベルあたりの平均学習時間（分）
+const TOTAL_LEVELS = 100;
+const IMPLEMENTED_LEVELS = 30;
+// 1レベルあたりの総合学習時間（アプリ内+自主復習含む）
+// 社労士試験の推奨学習時間 約300〜500時間 → 100レベルで割ると1レベル≒60分
+const AVG_MINS_PER_LEVEL = 60;
+
+// ── 次の社労士試験日を自動計算（毎年8月第4日曜日）──────────────
+function getNextExamDate(): Date {
+  const now = new Date();
+  for (let year = now.getFullYear(); year <= now.getFullYear() + 1; year++) {
+    // 8月の第4日曜日を求める
+    let sunCount = 0;
+    for (let d = 1; d <= 31; d++) {
+      const date = new Date(year, 7, d); // 8月
+      if (date.getMonth() !== 7) break;
+      if (date.getDay() === 0) { // 日曜日
+        sunCount++;
+        if (sunCount === 4) {
+          // 今日より後なら採用
+          if (date > now) return date;
+          break;
+        }
+      }
+    }
+  }
+  return new Date(now.getFullYear() + 1, 7, 1);
+}
 
 // ── 難易度 ★ 表示 ────────────────────────────────────────────
 function DifficultyStars({ level }: { level: number }) {
@@ -122,6 +146,8 @@ function formatTargetDate(days: number): string {
 export default function ProgressPage() {
   const { progress } = useUserStore();
   const { sessions, getSessionsThisWeek } = useStudyStore();
+  const nextExam = getNextExamDate();
+  const daysToExam = Math.ceil((nextExam.getTime() - Date.now()) / 86400000);
 
   const completedCount = progress.completedLevels.length;
   const overallPct = Math.min(100, Math.floor((completedCount / TOTAL_LEVELS) * 100));
@@ -300,10 +326,24 @@ export default function ProgressPage() {
         className="glass-card p-4"
         style={{ border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 0 20px rgba(245,158,11,0.06)' }}
       >
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-3">
           <Calendar size={14} style={{ color: '#FCD34D' }} />
           <h2 className="text-xs font-bold" style={{ color: '#FCD34D' }}>合格までの道のり</h2>
-          <span className="text-[9px] text-ink-subtle ml-auto">現在ペース基準</span>
+          <span className="text-[9px] text-ink-subtle ml-auto">推定 300〜500時間学習基準</span>
+        </div>
+
+        {/* 次の試験日カウントダウン */}
+        <div className="flex items-center justify-between px-3 py-2 rounded-xl mb-4"
+          style={{ background: 'rgba(251,113,133,0.08)', border: '1px solid rgba(251,113,133,0.25)' }}>
+          <div>
+            <p className="text-[10px] font-bold" style={{ color: '#FB7185' }}>📅 次回 社労士試験</p>
+            <p className="text-xs text-ink-muted">
+              {nextExam.getFullYear()}年{nextExam.getMonth() + 1}月{nextExam.getDate()}日（8月第4日曜）
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-lg font-black" style={{ color: '#FB7185' }}>あと{daysToExam}日</p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -351,7 +391,7 @@ export default function ProgressPage() {
         </div>
 
         <p className="text-[9px] text-ink-subtle mt-3 text-center">
-          ※ 1レベル平均{AVG_MINS_PER_LEVEL}分として計算。実際の学習時間により変動します。
+          ※ 社労士試験の推奨学習300〜500時間をもとに試算。試験日は毎年自動更新。
         </p>
       </motion.div>
 

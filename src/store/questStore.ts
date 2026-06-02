@@ -7,7 +7,9 @@ import { INITIAL_QUESTS } from '@/data/quests';
 
 interface QuestStore {
   quests: Quest[];
+  claimedQuestIds: string[]; // 受け取り済みクエストID（永続）
   updateQuestProgress: (questId: string, amount: number) => Quest | null;
+  claimQuest: (questId: string) => void;
   resetDailyQuests: () => void;
   initQuests: () => void;
 }
@@ -16,6 +18,7 @@ export const useQuestStore = create<QuestStore>()(
   persist(
     (set, get) => ({
       quests: INITIAL_QUESTS,
+      claimedQuestIds: [],
 
       updateQuestProgress: (questId, amount) => {
         let completedQuest: Quest | null = null;
@@ -33,6 +36,12 @@ export const useQuestStore = create<QuestStore>()(
         return completedQuest;
       },
 
+      claimQuest: (questId) =>
+        set((state) => {
+          if (state.claimedQuestIds.includes(questId)) return state;
+          return { claimedQuestIds: [...state.claimedQuestIds, questId] };
+        }),
+
       resetDailyQuests: () =>
         set((state) => ({
           quests: state.quests.map((q) => {
@@ -40,6 +49,11 @@ export const useQuestStore = create<QuestStore>()(
             const tomorrow = new Date();
             tomorrow.setHours(23, 59, 59, 999);
             return { ...q, current: 0, isCompleted: false, expiresAt: tomorrow.toISOString() };
+          }),
+          // デイリークエストのクレーム状態もリセット
+          claimedQuestIds: state.claimedQuestIds.filter((id) => {
+            const q = state.quests.find((qq) => qq.id === id);
+            return q?.type !== 'daily';
           }),
         })),
 
