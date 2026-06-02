@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, BookOpen, Zap, CreditCard, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSound } from '@/hooks/useSound';
 
 const TABS = [
   { href: '/',          label: 'ホーム',   icon: Home      },
@@ -15,6 +16,7 @@ const TABS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { play } = useSound();
 
   return (
     <nav
@@ -34,10 +36,10 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
+              onClick={() => { if (!active) play('navigate'); }}
               className="flex flex-col items-center gap-0.5 relative"
               style={{ minWidth: 52, padding: '6px 4px' }}
             >
-              {/* Active indicator line */}
               {active && (
                 <motion.div
                   layoutId="nav-bar"
@@ -46,8 +48,6 @@ export default function BottomNav() {
                   transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
-
-              {/* Icon with glow when active */}
               <motion.div
                 animate={active ? { scale: 1.15 } : { scale: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
@@ -58,11 +58,7 @@ export default function BottomNav() {
               >
                 <Icon size={21} />
               </motion.div>
-
-              <span
-                className="text-[9px] font-medium leading-none"
-                style={{ color: active ? '#F59E0B' : '#475569' }}
-              >
+              <span className="text-[9px] font-medium leading-none" style={{ color: active ? '#F59E0B' : '#475569' }}>
                 {label}
               </span>
             </Link>

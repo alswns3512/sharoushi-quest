@@ -175,7 +175,11 @@ export default function FlashcardPage() {
       play('correct');
       incrementFlashcardMastered();
       updateQuestProgress('daily_flashcard', 1);
-    } else { play('wrong'); }
+    } else if (result === 'review') {
+      play('swipe');
+    } else {
+      play('wrong');
+    }
 
     setResults((r) => [...r, { id: card.id, result }]);
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, CheckCircle, Clock, Zap, Star, Gift } from 'lucide-react';
 import { useQuestStore } from '@/store/questStore';
 import { useUserStore } from '@/store/userStore';
+import { useSound } from '@/hooks/useSound';
 import type { Quest } from '@/types';
 
 type TabType = 'daily' | 'weekly' | 'story';
@@ -42,6 +43,7 @@ export default function QuestPage() {
   const [floatXP, setFloatXP] = useState<{ id: number; xp: number } | null>(null);
   const { quests } = useQuestStore();
   const { gainXP } = useUserStore();
+  const { play } = useSound();
 
   const tabQuests = quests.filter((q) =>
     tab === 'story' ? q.type === 'story' || q.type === 'achievement' : q.type === tab
@@ -52,6 +54,7 @@ export default function QuestPage() {
   function claimQuest(quest: Quest) {
     if (!quest.isCompleted) return;
     gainXP(quest.xpReward);
+    play('ding');
     setFloatXP({ id: Date.now(), xp: quest.xpReward });
   }
 
@@ -72,7 +75,7 @@ export default function QuestPage() {
           <motion.button
             key={type}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setTab(type)}
+            onClick={() => { setTab(type); play('tap'); }}
             className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all"
             style={
               tab === type

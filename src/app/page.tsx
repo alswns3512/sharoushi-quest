@@ -10,6 +10,7 @@ import { useStudyStore } from '@/store/studyStore';
 import { useStreak } from '@/hooks/useStreak';
 import { ALL_BADGES } from '@/data/badges';
 import { TriviaModal, useTriviaAutoShow } from '@/components/game/TriviaModal';
+import { useSound } from '@/hooks/useSound';
 
 // ── レベルに応じたキャラアイコン ────────────────────────
 function charIcon(level: number) {
@@ -101,6 +102,7 @@ export default function HomePage() {
   const { quests } = useQuestStore();
   const { streak, streakMessage } = useStreak();
   const { showTrivia, setShowTrivia } = useTriviaAutoShow();
+  const { play } = useSound();
 
   const xpPct = progress.xpToNextLevel > 0
     ? Math.min(100, Math.floor((progress.currentXP / progress.xpToNextLevel) * 100))
@@ -189,7 +191,7 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           whileTap={{ scale: 0.96 }}
-          onClick={() => setShowTrivia(true)}
+          onClick={() => { setShowTrivia(true); play('tap'); }}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl"
           style={{
             background: 'rgba(245,158,11,0.08)',

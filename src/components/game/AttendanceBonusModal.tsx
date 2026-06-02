@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, Gift, X } from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
+import { useSound } from '@/hooks/useSound';
 
 const STREAK_MILESTONES = [
   { days: 1,  label: '初日ボーナス',       color: '#F59E0B' },
@@ -30,6 +31,7 @@ export function AttendanceBonusModal() {
   } = useUserStore();
 
   const { label, color } = getMilestoneLabel(progress.streak);
+  const { play } = useSound();
 
   return (
     <AnimatePresence>
@@ -116,7 +118,7 @@ export function AttendanceBonusModal() {
             {/* Claim button */}
             <motion.button
               whileTap={{ scale: 0.93 }}
-              onClick={claimAttendanceBonus}
+              onClick={() => { play('chime'); claimAttendanceBonus(); }}
               className="w-full py-4 rounded-2xl font-bold text-base"
               style={{
                 background: `linear-gradient(135deg, ${color}, ${color}cc)`,
