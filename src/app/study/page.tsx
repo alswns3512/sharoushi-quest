@@ -8,6 +8,7 @@ import { useUserStore } from '@/store/userStore';
 import { useQuestStore } from '@/store/questStore';
 import { useXP } from '@/hooks/useXP';
 import { useSound } from '@/hooks/useSound';
+import { checkAndUnlockBadges } from '@/lib/gameLogic';
 import type { StudyLevel, QuizQuestion } from '@/types';
 
 // ── 定数 ────────────────────────────────────────────────────────────────
@@ -162,7 +163,7 @@ function LearningFlow({
   const [understanding, setUnderstanding] = useState<UnderstandingLevel | null>(null);
   const [earnedXP, setEarnedXP] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const { completeLevel } = useUserStore();
+  const { completeLevel, unlockBadge, addStudyMinutes } = useUserStore();
   const { updateQuestProgress } = useQuestStore();
   const { addXP } = useXP();
   const { play } = useSound();
@@ -188,6 +189,8 @@ function LearningFlow({
     addXP(xp);
     if (ratio >= 0.5) {
       completeLevel(level.id);
+      // 学習時間を記録
+      addStudyMinutes(level.estimatedMinutes);
       // クエスト進捗（1ずつ増分）
       updateQuestProgress('daily_level', 1);
       updateQuestProgress('weekly_levels', 1);
@@ -195,6 +198,9 @@ function LearningFlow({
       if (level.id === 'level_001') updateQuestProgress('story_first_step', 1);
       updateQuestProgress('story_intro_complete', 1);
       updateQuestProgress('story_sharoushi_complete', 1);
+      // バッジチェック（completeLevel後にstoreが更新されるので最新状態を取得）
+      const latestProgress = useUserStore.getState().progress;
+      checkAndUnlockBadges(latestProgress, unlockBadge);
     }
     play('complete'); // tap音なしで進行
     setShowConfetti(true);

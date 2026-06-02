@@ -85,6 +85,7 @@ export const useUserStore = create<UserStore>()(
             progress: {
               ...state.progress,
               completedLevels: [...state.progress.completedLevels, levelId],
+              dailyLevelsClearedToday: state.progress.dailyLevelsClearedToday + 1,
             },
           };
         }),
@@ -115,6 +116,8 @@ export const useUserStore = create<UserStore>()(
             ...state.progress,
             quizTotalCount: state.progress.quizTotalCount + 1,
             quizCorrectCount: state.progress.quizCorrectCount + (isCorrect ? 1 : 0),
+            // 連続正解カウンタ — 正解で+1、不正解でリセット
+            quizStreak: isCorrect ? state.progress.quizStreak + 1 : 0,
           },
         })),
 

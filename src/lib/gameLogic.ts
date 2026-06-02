@@ -69,5 +69,41 @@ export function checkAndUpdateStreak(progress: UserProgress): UserProgress {
   if (progress.lastStudyDate === today) return progress;
   const yesterday = new Date(Date.now() - 86400000).toDateString();
   const newStreak = progress.lastStudyDate === yesterday ? progress.streak + 1 : 1;
-  return { ...progress, streak: newStreak, lastStudyDate: today };
+  // 日付が変わったら1日のレベルクリア数をリセット
+  return { ...progress, streak: newStreak, lastStudyDate: today, dailyLevelsClearedToday: 0 };
+}
+
+// ── バッジ解除チェック ────────────────────────────────────────
+// レベルクリア・ログイン・クイズ正解後に呼ぶ
+export function checkAndUnlockBadges(
+  progress: UserProgress,
+  unlockBadge: (id: string) => void,
+): void {
+  const unlocked = new Set(progress.unlockedBadges);
+  const tryUnlock = (id: string) => { if (!unlocked.has(id)) unlockBadge(id); };
+
+  const hour = new Date().getHours();
+  const completedCount = progress.completedLevels.length;
+
+  // 初回ログイン
+  tryUnlock('badge_first_login');
+
+  // ストリーク
+  if (progress.streak >= 3)  tryUnlock('badge_streak_3');
+  if (progress.streak >= 7)  tryUnlock('badge_streak_7');
+
+  // クリアステージ数
+  if (completedCount >= 10) tryUnlock('badge_level10_clear');
+  if (completedCount >= 20) tryUnlock('badge_level20_clear');
+  if (completedCount >= 30) tryUnlock('badge_level30_clear');
+
+  // 時間帯
+  if (hour >= 22) tryUnlock('badge_night_study');
+  if (hour < 6)   tryUnlock('badge_morning_study');
+
+  // クイズ連続正解
+  if (progress.quizStreak >= 10) tryUnlock('badge_quiz_streak_10');
+
+  // 1日に3レベルクリア
+  if (progress.dailyLevelsClearedToday >= 3) tryUnlock('badge_speed_3');
 }

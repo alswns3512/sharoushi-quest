@@ -9,6 +9,7 @@ import { useUserStore } from '@/store/userStore';
 import { useQuestStore } from '@/store/questStore';
 import { useXP } from '@/hooks/useXP';
 import { useSound } from '@/hooks/useSound';
+import { checkAndUnlockBadges } from '@/lib/gameLogic';
 import { storageGet, storageSet } from '@/lib/storage';
 
 // ── 定数 ─────────────────────────────────────────────────────────────────
@@ -81,7 +82,7 @@ function ModeCard({ icon, title, desc, color, onClick }: { icon: React.ReactNode
 
 // ── Main ─────────────────────────────────────────────────────────────────
 export default function QuizPage() {
-  const { progress, recordQuizAnswer } = useUserStore();
+  const { progress, recordQuizAnswer, unlockBadge } = useUserStore();
   const { updateQuestProgress } = useQuestStore();
   const { addXP } = useXP();
   const { play } = useSound();
@@ -132,6 +133,9 @@ export default function QuizPage() {
     } else {
       const w = loadWrong(); w[q.id] = (w[q.id] ?? 0) + 1; saveWrong(w);
     }
+    // recordQuizAnswer後に最新状態でバッジチェック
+    const latestProgress = useUserStore.getState().progress;
+    checkAndUnlockBadges(latestProgress, unlockBadge);
   };
 
   const saveMemo = () => {

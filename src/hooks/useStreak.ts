@@ -3,9 +3,10 @@
 import { useEffect } from 'react';
 import { useUserStore } from '@/store/userStore';
 import { useQuestStore } from '@/store/questStore';
+import { checkAndUnlockBadges } from '@/lib/gameLogic';
 
 export function useStreak() {
-  const { progress, touchStreak } = useUserStore();
+  const { progress, touchStreak, unlockBadge } = useUserStore();
   const { updateQuestProgress, resetDailyQuests, lastQuestResetDate } = useQuestStore();
 
   useEffect(() => {
@@ -16,7 +17,7 @@ export function useStreak() {
       resetDailyQuests(today);
     }
 
-    // ストリーク更新（初回訪問判定もここで行う）
+    // ストリーク更新（初回訪問判定）
     const prevLoginDate = progress.lastLoginDate;
     touchStreak();
 
@@ -24,6 +25,11 @@ export function useStreak() {
     if (prevLoginDate !== today) {
       updateQuestProgress('weekly_login', 1);
     }
+
+    // バッジチェック（ログイン系・ストリーク系）
+    const latestProgress = useUserStore.getState().progress;
+    checkAndUnlockBadges(latestProgress, unlockBadge);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
