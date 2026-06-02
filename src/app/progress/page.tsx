@@ -2,11 +2,42 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart2, Flame, Star, BookOpen, HelpCircle, Clock, TrendingUp } from 'lucide-react';
+import {
+  BarChart2, Flame, Star, BookOpen, HelpCircle, Clock,
+  TrendingUp, Target, Calendar, Zap,
+} from 'lucide-react';
 import { useUserStore } from '@/store/userStore';
 import { useStudyStore } from '@/store/studyStore';
+import { STUDY_LEVELS } from '@/data/levels';
 
-// ── 8-week heatmap ───────────────────────────────────────────
+// ── 科目定義 ──────────────────────────────────────────────────
+const SUBJECTS = [
+  { key: 'intro',     label: '超入門',         icon: '📘', color: '#38BDF8', difficulty: 1, totalLevels: 10 },
+  { key: 'sharoushi', label: '社労士基礎',      icon: '⚖️', color: '#F59E0B', difficulty: 2, totalLevels: 10 },
+  { key: 'rodo',      label: '労働基準法',       icon: '📋', color: '#10B981', difficulty: 3, totalLevels: 15 },
+  { key: 'anzen',     label: '労働安全衛生法',   icon: '🦺', color: '#FB7185', difficulty: 3, totalLevels: 10 },
+  { key: 'rousai',    label: '労災保険法',       icon: '🏥', color: '#818CF8', difficulty: 4, totalLevels: 12 },
+  { key: 'koyo',      label: '雇用保険法',       icon: '🏢', color: '#FCD34D', difficulty: 4, totalLevels: 12 },
+  { key: 'kenko',     label: '健康保険法',       icon: '💊', color: '#34D399', difficulty: 4, totalLevels: 11 },
+  { key: 'nenkin',    label: '年金法',           icon: '🏦', color: '#F472B6', difficulty: 5, totalLevels: 10 },
+] as const;
+
+const TOTAL_LEVELS = 100; // 全レベル数（想定）
+const IMPLEMENTED_LEVELS = 30; // 実装済みレベル数
+const AVG_MINS_PER_LEVEL = 5; // 1レベルあたりの平均学習時間（分）
+
+// ── 難易度 ★ 表示 ────────────────────────────────────────────
+function DifficultyStars({ level }: { level: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} style={{ fontSize: 9, color: i <= level ? '#F59E0B' : '#1E293B' }}>★</span>
+      ))}
+    </div>
+  );
+}
+
+// ── 8週ヒートマップ ───────────────────────────────────────────
 function Heatmap({ sessions }: { sessions: { date: string; durationMinutes: number }[] }) {
   const cells = useMemo(() => {
     const map = new Map<string, number>();
@@ -41,7 +72,6 @@ function Heatmap({ sessions }: { sessions: { date: string; durationMinutes: numb
                   : cell.minutes > 0
                     ? 'rgba(245,158,11,0.4)'
                     : 'rgba(255,255,255,0.06)',
-                boxShadow: cell.minutes > 0 ? '0 0 3px rgba(245,158,11,0.3)' : 'none',
               }}
             />
           ))}
@@ -51,44 +81,51 @@ function Heatmap({ sessions }: { sessions: { date: string; durationMinutes: numb
   );
 }
 
-// ── Accuracy timeline (last 10 sessions) ─────────────────────
-function AccuracyLine({ sessions }: { sessions: { xpEarned: number; levelsCompleted: string[] }[] }) {
-  const recent = sessions.slice(-10);
-  if (recent.length < 2) {
-    return <div className="text-xs text-ink-subtle text-center py-4">データが足りません（2セッション以上必要）</div>;
-  }
-
-  const w = 260;
-  const h = 60;
-  const pts = recent.map((s, i) => {
-    const pct = Math.min(100, s.levelsCompleted.length > 0 ? Math.round((s.xpEarned / (s.levelsCompleted.length * 100)) * 100) : 0);
-    return { x: (i / (recent.length - 1)) * w, y: h - (pct / 100) * h };
-  });
-  const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const areaD = `${pathD} L ${w} ${h} L 0 ${h} Z`;
-
-  return (
-    <svg width={w} height={h + 16} viewBox={`0 0 ${w} ${h + 16}`}>
-      <defs>
-        <linearGradient id="lineArea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#818CF8" stopOpacity={0.35} />
-          <stop offset="100%" stopColor="#818CF8" stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <path d={areaD} fill="url(#lineArea)" />
-      <path d={pathD} fill="none" stroke="#818CF8" strokeWidth={2} strokeLinejoin="round" />
-      {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={3} fill="#818CF8" />
-      ))}
-      <text x={0} y={h + 13} fontSize={8} fill="#475569">古い</text>
-      <text x={w} y={h + 13} fontSize={8} fill="#475569" textAnchor="end">最新</text>
-    </svg>
-  );
+// ── 合格タイムライン計算 ─────────────────────────────────────
+interface Scenario {
+  label: string;
+  icon: string;
+  color: string;
+  minsPerDay: number;
+  daysPerWeek: number;
+  description: string;
 }
 
+const SCENARIOS: Scenario[] = [
+  { label: '楽観シナリオ',   icon: '🚀', color: '#10B981', minsPerDay: 40, daysPerWeek: 7, description: '毎日40分学習' },
+  { label: '標準シナリオ',   icon: '📚', color: '#F59E0B', minsPerDay: 25, daysPerWeek: 5, description: '毎日25分・週5日' },
+  { label: '忙しいシナリオ', icon: '⏱️', color: '#818CF8', minsPerDay: 15, daysPerWeek: 4, description: '15分・週4日' },
+];
+
+function calcDaysToGoal(completedLevels: number, scenario: Scenario): number {
+  const remainingLevels = Math.max(0, TOTAL_LEVELS - completedLevels);
+  const remainingMins = remainingLevels * AVG_MINS_PER_LEVEL;
+  const minsPerWeek = scenario.minsPerDay * scenario.daysPerWeek;
+  const weeks = remainingMins / minsPerWeek;
+  return Math.ceil(weeks * 7);
+}
+
+function formatDays(days: number): string {
+  if (days <= 0) return '合格レベル達成！🎉';
+  if (days < 30) return `約${days}日`;
+  if (days < 365) return `約${Math.round(days / 30)}か月`;
+  return `約${(days / 365).toFixed(1)}年`;
+}
+
+function formatTargetDate(days: number): string {
+  if (days <= 0) return '';
+  const d = new Date(Date.now() + days * 86400000);
+  return `${d.getFullYear()}年${d.getMonth() + 1}月頃`;
+}
+
+// ── Main Page ─────────────────────────────────────────────────
 export default function ProgressPage() {
   const { progress } = useUserStore();
   const { sessions, getSessionsThisWeek } = useStudyStore();
+
+  const completedCount = progress.completedLevels.length;
+  const overallPct = Math.min(100, Math.floor((completedCount / TOTAL_LEVELS) * 100));
+  const implPct = Math.min(100, Math.floor((completedCount / IMPLEMENTED_LEVELS) * 100));
 
   const xpPercent = progress.xpToNextLevel > 0
     ? Math.min(100, Math.floor((progress.currentXP / progress.xpToNextLevel) * 100))
@@ -100,26 +137,31 @@ export default function ProgressPage() {
 
   const weekSessions = getSessionsThisWeek();
   const weekMinutes = weekSessions.reduce((s, ss) => s + ss.durationMinutes, 0);
-  const weekXP = weekSessions.reduce((s, ss) => s + ss.xpEarned, 0);
 
-  const STATS = [
-    { label: 'レベル',     value: `Lv.${progress.level}`,                    icon: Star,       color: '#F59E0B' },
-    { label: '連続学習',   value: `${progress.streak}日`,                     icon: Flame,      color: '#FB7185' },
-    { label: 'クリア済み', value: `${progress.completedLevels.length}ステージ`,icon: BookOpen,   color: '#10B981' },
-    { label: 'クイズ正解', value: `${progress.quizCorrectCount}問`,           icon: HelpCircle, color: '#818CF8' },
-    { label: '正解率',     value: `${accuracyPct}%`,                          icon: TrendingUp, color: '#38BDF8' },
-    { label: '総学習時間', value: `${progress.totalStudyMinutes}分`,          icon: Clock,      color: '#FCD34D' },
-  ];
+  // 推定残り時間
+  const remainingLevels = Math.max(0, TOTAL_LEVELS - completedCount);
+  const estimatedRemainingMins = remainingLevels * AVG_MINS_PER_LEVEL;
+
+  // 科目別進捗
+  const subjectStats = useMemo(() => {
+    return SUBJECTS.map((sub) => {
+      const subLevels = STUDY_LEVELS.filter((l) => l.subject === sub.key);
+      const cleared = subLevels.filter((l) => progress.completedLevels.includes(l.id)).length;
+      const pct = subLevels.length > 0 ? Math.floor((cleared / subLevels.length) * 100) : 0;
+      return { ...sub, cleared, total: subLevels.length, pct };
+    });
+  }, [progress.completedLevels]);
 
   return (
     <div className="px-4 pt-8 pb-8 max-w-lg mx-auto flex flex-col gap-5">
-      {/* Title */}
+
+      {/* ── Title ── */}
       <div className="flex items-center gap-2">
         <BarChart2 size={22} style={{ color: '#38BDF8' }} />
         <h1 className="heading-serif text-2xl" style={{ color: '#38BDF8' }}>学習進捗</h1>
       </div>
 
-      {/* XP card */}
+      {/* ── XP Card ── */}
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
@@ -132,9 +174,7 @@ export default function ProgressPage() {
             <div className="text-xs text-ink-muted">総XP: {progress.totalXP.toLocaleString()}</div>
           </div>
           <div className="text-right">
-            <div className="text-sm font-bold" style={{ color: '#F8FAFC' }}>
-              {progress.currentXP} / {progress.xpToNextLevel} XP
-            </div>
+            <div className="text-sm font-bold" style={{ color: '#F8FAFC' }}>{progress.currentXP} / {progress.xpToNextLevel} XP</div>
             <div className="text-xs text-ink-muted">次のレベルまで</div>
           </div>
         </div>
@@ -144,14 +184,192 @@ export default function ProgressPage() {
         <div className="text-xs text-right mt-1" style={{ color: '#F59E0B' }}>{xpPercent}%</div>
       </motion.div>
 
-      {/* Stats grid */}
+      {/* ── 全体進捗サマリー ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="glass-card p-5"
+        style={{ border: '1px solid rgba(56,189,248,0.25)' }}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <Target size={14} style={{ color: '#38BDF8' }} />
+          <h2 className="text-xs font-bold" style={{ color: '#38BDF8' }}>全体進捗サマリー</h2>
+        </div>
+
+        <div className="flex items-end gap-3 mb-3">
+          <span className="heading-serif font-black" style={{ fontSize: 48, lineHeight: 1, color: '#F8FAFC' }}>
+            {completedCount}
+          </span>
+          <span className="text-ink-muted text-sm mb-1">/ {TOTAL_LEVELS} レベルクリア</span>
+          <span className="ml-auto text-xl font-bold" style={{ color: '#38BDF8' }}>{overallPct}%</span>
+        </div>
+
+        {/* 全体バー */}
+        <div className="xp-bar-track mb-1" style={{ height: 10 }}>
+          <motion.div
+            className="h-full rounded-full"
+            style={{
+              background: 'linear-gradient(90deg, #38BDF8, #818CF8)',
+              boxShadow: '0 0 8px rgba(56,189,248,0.5)',
+            }}
+            initial={{ width: 0 }}
+            animate={{ width: `${overallPct}%` }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
+          />
+        </div>
+        <div className="flex justify-between text-[10px] text-ink-subtle mb-3">
+          <span>スタート</span>
+          <span>合格レベル（{TOTAL_LEVELS}レベル完走）</span>
+        </div>
+
+        {/* 実装済みの進捗 */}
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <BookOpen size={13} style={{ color: '#10B981', flexShrink: 0 }} />
+          <div className="flex-1">
+            <div className="text-[10px] text-ink-muted mb-0.5">現在実装済みコンテンツ</div>
+            <div className="xp-bar-track" style={{ height: 4 }}>
+              <div className="h-full rounded-full" style={{ width: `${implPct}%`, background: '#10B981' }} />
+            </div>
+          </div>
+          <span className="text-xs font-bold flex-shrink-0" style={{ color: '#10B981' }}>
+            {completedCount}/{IMPLEMENTED_LEVELS}
+          </span>
+        </div>
+
+        {/* 推定残り時間 */}
+        <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+          <Clock size={13} style={{ color: '#F59E0B', flexShrink: 0 }} />
+          <span className="text-[10px] text-ink-muted">推定残り学習時間</span>
+          <span className="ml-auto text-xs font-bold" style={{ color: '#F59E0B' }}>
+            約{estimatedRemainingMins >= 60 ? `${Math.floor(estimatedRemainingMins / 60)}時間${estimatedRemainingMins % 60}分` : `${estimatedRemainingMins}分`}
+          </span>
+        </div>
+      </motion.div>
+
+      {/* ── 科目別進捗 ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="glass-card p-4"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <BookOpen size={14} style={{ color: '#10B981' }} />
+          <h2 className="text-xs font-bold" style={{ color: '#10B981' }}>科目別進捗</h2>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {subjectStats.map((sub, i) => (
+            <motion.div
+              key={sub.key}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 + i * 0.05 }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-base flex-shrink-0">{sub.icon}</span>
+                <span className="text-xs font-bold flex-1" style={{ color: '#F8FAFC' }}>{sub.label}</span>
+                <DifficultyStars level={sub.difficulty} />
+                <span className="text-[10px] font-bold flex-shrink-0" style={{ color: sub.color }}>
+                  {sub.total > 0 ? `${sub.cleared}/${sub.total}` : '準備中'}
+                </span>
+              </div>
+              <div className="xp-bar-track" style={{ height: 6 }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${sub.color}, ${sub.color}99)`,
+                    boxShadow: sub.pct > 0 ? `0 0 6px ${sub.color}60` : 'none',
+                  }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${sub.total > 0 ? sub.pct : 0}%` }}
+                  transition={{ duration: 0.8, delay: 0.25 + i * 0.05 }}
+                />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ── 合格までの道のり ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="glass-card p-4"
+        style={{ border: '1px solid rgba(245,158,11,0.2)', boxShadow: '0 0 20px rgba(245,158,11,0.06)' }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar size={14} style={{ color: '#FCD34D' }} />
+          <h2 className="text-xs font-bold" style={{ color: '#FCD34D' }}>合格までの道のり</h2>
+          <span className="text-[9px] text-ink-subtle ml-auto">現在ペース基準</span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {SCENARIOS.map((sc, i) => {
+            const days = calcDaysToGoal(completedCount, sc);
+            const targetDate = formatTargetDate(days);
+            const isAchieved = days <= 0;
+            return (
+              <motion.div
+                key={sc.label}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.35 + i * 0.07 }}
+                className="rounded-xl p-3"
+                style={{ background: `${sc.color}10`, border: `1px solid ${sc.color}30` }}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-base">{sc.icon}</span>
+                  <div className="flex-1">
+                    <div className="text-xs font-bold" style={{ color: sc.color }}>{sc.label}</div>
+                    <div className="text-[9px] text-ink-subtle">{sc.description}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-black" style={{ color: isAchieved ? '#10B981' : sc.color }}>
+                      {formatDays(days)}
+                    </div>
+                    {targetDate && (
+                      <div className="text-[9px] text-ink-subtle">{targetDate}</div>
+                    )}
+                  </div>
+                </div>
+                {/* Progress bar showing how far along */}
+                <div className="xp-bar-track" style={{ height: 4 }}>
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${overallPct}%`,
+                      background: `linear-gradient(90deg, ${sc.color}, ${sc.color}aa)`,
+                    }}
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <p className="text-[9px] text-ink-subtle mt-3 text-center">
+          ※ 1レベル平均{AVG_MINS_PER_LEVEL}分として計算。実際の学習時間により変動します。
+        </p>
+      </motion.div>
+
+      {/* ── Stats grid ── */}
       <div className="grid grid-cols-2 gap-3">
-        {STATS.map(({ label, value, icon: Icon, color }, i) => (
+        {[
+          { label: '連続学習',   value: `${progress.streak}日`,                    icon: Flame,      color: '#FB7185' },
+          { label: 'クイズ正解', value: `${progress.quizCorrectCount}問`,           icon: HelpCircle, color: '#818CF8' },
+          { label: '正解率',     value: `${accuracyPct}%`,                          icon: TrendingUp, color: '#38BDF8' },
+          { label: '総学習時間', value: `${progress.totalStudyMinutes}分`,          icon: Clock,      color: '#FCD34D' },
+          { label: '今週の学習', value: `${weekMinutes}分`,                         icon: Zap,        color: '#10B981' },
+          { label: 'バッジ獲得', value: `${progress.unlockedBadges.length}個`,      icon: Star,       color: '#F59E0B' },
+        ].map(({ label, value, icon: Icon, color }, i) => (
           <motion.div
             key={label}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.06 }}
+            transition={{ delay: 0.4 + i * 0.05 }}
             className="glass-card p-4 flex items-center gap-3"
           >
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -166,35 +384,11 @@ export default function ProgressPage() {
         ))}
       </div>
 
-      {/* This week */}
+      {/* ── ヒートマップ ── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="glass-card p-4"
-      >
-        <h3 className="font-bold text-xs mb-3" style={{ color: '#38BDF8' }}>今週のサマリー</h3>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <div className="font-bold text-xl" style={{ color: '#F8FAFC' }}>{weekSessions.length}</div>
-            <div className="text-[10px] text-ink-muted">セッション</div>
-          </div>
-          <div>
-            <div className="font-bold text-xl" style={{ color: '#F8FAFC' }}>{weekMinutes}</div>
-            <div className="text-[10px] text-ink-muted">分</div>
-          </div>
-          <div>
-            <div className="font-bold text-xl" style={{ color: '#F59E0B' }}>{weekXP}</div>
-            <div className="text-[10px] text-ink-muted">XP</div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Heatmap */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.55 }}
         className="glass-card p-4"
       >
         <h3 className="font-bold text-xs mb-3" style={{ color: '#F59E0B' }}>学習ヒートマップ（8週間）</h3>
@@ -208,18 +402,6 @@ export default function ProgressPage() {
         </div>
       </motion.div>
 
-      {/* Accuracy timeline */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="glass-card p-4"
-      >
-        <h3 className="font-bold text-xs mb-3" style={{ color: '#818CF8' }}>セッション別XP推移</h3>
-        <div className="flex justify-center overflow-x-auto">
-          <AccuracyLine sessions={sessions} />
-        </div>
-      </motion.div>
     </div>
   );
 }
