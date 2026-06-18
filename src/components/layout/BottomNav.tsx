@@ -9,7 +9,7 @@ import { useSound } from '@/hooks/useSound';
 const TABS = [
   { href: '/',          label: 'ホーム',   icon: Home         },
   { href: '/study',     label: '学習',     icon: BookOpen     },
-  { href: '/exam',      label: '模擬',     icon: ClipboardList },
+  { href: '/exam',      label: '試験',     icon: ClipboardList },
   { href: '/flashcard', label: 'カード',   icon: CreditCard   },
   { href: '/progress',  label: '進捗',     icon: BarChart2    },
 ];

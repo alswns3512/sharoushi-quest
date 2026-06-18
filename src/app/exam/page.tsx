@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, BookOpen, Trophy, ChevronRight, Clock,
   CheckCircle, X, AlertCircle, BarChart2, RotateCcw, Home,
-  ChevronLeft, ChevronDown, ChevronUp,
+  ChevronLeft, ChevronDown, ChevronUp, Sword, ClipboardList,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ALL_QUIZZES } from '@/data/quizzes';
 import type { QuizQuestion, Subject } from '@/types';
 import { storageGet, storageSet } from '@/lib/storage';
+import QuestPageContent from '@/app/quest/page';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ExamMode = 'quick' | 'subject' | 'full';
@@ -110,6 +111,7 @@ function SubjectBar({ subject, correct, total }: SubjectStat) {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 export default function ExamPage() {
+  const [section, setSection] = useState<'quest' | 'exam'>('exam');
   const [phase, setPhase]     = useState<Phase>('select');
   const [mode, setMode]       = useState<ExamMode>('quick');
   const [selSubject, setSelSubject] = useState<string | undefined>(undefined);
@@ -226,9 +228,41 @@ export default function ExamPage() {
   const timerColor = timeLeft > 120 ? '#34D399' : timeLeft > 60 ? '#F59E0B' : '#FB7185';
   const answeredCount = answers.filter((a) => a !== null).length;
 
+  // ── Section tab header (shown on select / subject_pick phases) ───────────
+  const SectionTabs = () => (
+    <div className="flex gap-2 mb-6">
+      {([
+        { key: 'quest', label: 'クエスト', icon: <Sword size={14} /> },
+        { key: 'exam',  label: '模擬テスト', icon: <ClipboardList size={14} /> },
+      ] as const).map(({ key, label, icon }) => (
+        <motion.button key={key} whileTap={{ scale: 0.95 }}
+          onClick={() => setSection(key)}
+          className="flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+          style={section === key
+            ? { background: 'rgba(245,158,11,0.15)', border: '1.5px solid #F59E0B', color: '#F59E0B' }
+            : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#475569' }
+          }
+        >
+          {icon}{label}
+        </motion.button>
+      ))}
+    </div>
+  );
+
+  // クエストセクション
+  if ((phase === 'select' || phase === 'subject_pick') && section === 'quest') return (
+    <div className="pb-28">
+      <div className="px-4 pt-10 max-w-lg mx-auto">
+        <SectionTabs />
+      </div>
+      <QuestPageContent />
+    </div>
+  );
+
   // ── PHASE: SELECT ─────────────────────────────────────────────────────────
   if (phase === 'select') return (
     <div className="px-4 pt-10 pb-28 max-w-lg mx-auto">
+      <SectionTabs />
       <div className="mb-7">
         <h1 className="heading-serif text-2xl mb-1" style={{ color: '#F59E0B' }}>模擬テスト</h1>
         <p className="text-xs" style={{ color: '#64748B' }}>本番さながらの試験形式で実力を確かめよう</p>
@@ -287,6 +321,7 @@ export default function ExamPage() {
   // ── PHASE: SUBJECT PICK ───────────────────────────────────────────────────
   if (phase === 'subject_pick') return (
     <div className="px-4 pt-10 pb-28 max-w-lg mx-auto">
+      <SectionTabs />
       <button onClick={() => setPhase('select')} className="flex items-center gap-1 text-sm mb-5" style={{ color: '#64748B' }}>
         <ChevronLeft size={15} /> 戻る
       </button>
