@@ -37,7 +37,7 @@ const MODE_CONFIG: Record<ExamMode, { label: string; questions: number; minutes:
 
 const EXAM_SUBJECTS: Subject[] = [
   '労働基準法', '雇用保険法', '健康保険法', '厚生年金保険法', '国民年金法',
-  '労働安全衛生法', '労災保険法', '超入門',
+  '労働安全衛生法', '労災保険法', '労働保険徴収法', '一般常識', '超入門',
 ];
 
 const HISTORY_KEY = 'exam_history';

@@ -1,5 +1,6 @@
 import { STUDY_LEVELS } from '@/data/levels';
 import { EXAM_QUESTIONS } from '@/data/exam-questions';
+import { EXAM_QUESTIONS_2 } from '@/data/exam-questions-2';
 import type { QuizQuestion } from '@/types';
 
 /** 全レベルのクイズをフラットに展開したもの（クイズチャレンジ画面で使用） */
@@ -10,6 +11,7 @@ export const ALL_QUIZZES: QuizWithLevel[] = [
     level.quiz.map((q) => ({ ...q, levelId: level.levelNumber }))
   ),
   ...EXAM_QUESTIONS.map((q) => ({ ...q, levelId: 0 })),
+  ...EXAM_QUESTIONS_2.map((q) => ({ ...q, levelId: 0 })),
 ];
 
 /** 科目別に絞り込むユーティリティ */
