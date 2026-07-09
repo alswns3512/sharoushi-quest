@@ -20,6 +20,7 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  staticPageGenerationTimeout: 180,
   // 環境変数なし / 外部APIなし — localStorage のみ使用
   // Vercel へそのままデプロイ可能（追加設定不要）
 };
